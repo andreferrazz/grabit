@@ -1,0 +1,19 @@
+# Backend
+backend/.gradle/
+backend/build/
+backend/out/
+backend/.kotlin/
+backend/bin/
+
+# Frontend
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.env
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+*.log

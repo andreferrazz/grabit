@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: grabit
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grabit
+    username: grabit
+    password: grabit
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  docker:
+    compose:
+      lifecycle-management: start-and-stop
+      file: ../compose.yaml
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: INFO
+    com.grabit: INFO
