@@ -13,17 +13,16 @@ RUN ./gradlew --no-daemon bootJar -x test
 FROM eclipse-temurin:25-jdk AS extract
 WORKDIR /workspace
 COPY --from=build /workspace/build/libs/*.jar app.jar
-RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted
+RUN java -Djarmode=tools -jar app.jar extract --destination extracted
 
 FROM eclipse-temurin:25-jre-alpine AS runtime
 WORKDIR /app
 RUN addgroup -S app && adduser -S -G app -u 1001 -s /sbin/nologin app
 USER app
 
-COPY --from=extract /workspace/extracted/dependencies/ ./
-COPY --from=extract /workspace/extracted/spring-boot-loader/ ./
-COPY --from=extract /workspace/extracted/snapshot-dependencies/ ./
-COPY --from=extract /workspace/extracted/application/ ./
+COPY --from=extract /workspace/extracted/ ./
 
 EXPOSE 8080
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["java", "-jar", "app.jar"]
