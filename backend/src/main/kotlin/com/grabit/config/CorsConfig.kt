@@ -1,14 +1,17 @@
 package com.grabit.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-class CorsConfig : WebMvcConfigurer {
+class CorsConfig(
+    @Value("\${app.cors.allowed-origins}") private val allowedOrigins: List<String>
+) : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/api/**")
-            .allowedOrigins("http://localhost:5173")
+            .allowedOrigins(*allowedOrigins.toTypedArray())
             .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .maxAge(3600)
