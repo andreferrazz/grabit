@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grabit
+    username: grabit
+    password: grabit
+  docker:
+    compose:
+      lifecycle-management: start-and-stop
+      file: ../compose.yaml
+
+logging:
+  level:
+    org.hibernate.SQL: INFO
+    com.grabit: DEBUG

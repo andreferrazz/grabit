@@ -2,9 +2,9 @@ spring:
   application:
     name: grabit
   datasource:
-    url: jdbc:postgresql://localhost:5432/grabit
-    username: grabit
-    password: grabit
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,15 +17,11 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-  docker:
-    compose:
-      lifecycle-management: start-and-stop
-      file: ../compose.yaml
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:
-    org.hibernate.SQL: INFO
+    org.hibernate.SQL: WARN
     com.grabit: INFO
