@@ -11,6 +11,10 @@ spring:
     compose:
       lifecycle-management: start-and-stop
       file: ../compose.yaml
+  flyway:
+    locations:
+      - classpath:db/migration
+      - classpath:db/seed
 
 logging:
   level:
