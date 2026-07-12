@@ -1,157 +1,36 @@
-# Grabit
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Simple shopping lists for everyday buying.
+## Getting Started
 
-A small full-stack app: SvelteKit frontend with optimistic UI, Kotlin/Spring Boot REST backend, PostgreSQL.
-
-```
-grabit/
-├── frontend/      # SvelteKit + TypeScript + Tailwind v4
-├── backend/       # Kotlin + Spring Boot 4 + Spring Data JPA + Flyway
-└── compose.yaml   # PostgreSQL 17 (auto-started by the backend in dev)
-```
-
-## Prerequisites
-
-- **Java 25** (e.g. via [SDKMAN!](https://sdkman.io/): `sdk install java 25.0.2-amzn && sdk use java 25.0.2-amzn`)
-- **Node.js 22+** and **npm**
-- **Docker** with Compose (the backend starts Postgres for you in dev)
-
-## Quickstart
-
-### 1. Backend
+First, run the development server:
 
 ```bash
-cd backend
-./gradlew bootRun
-```
-
-The first run downloads Gradle 9.5, all dependencies, and the `postgres:17` image. Spring Boot's Docker Compose integration auto-starts the Postgres container defined in `compose.yaml`, runs Flyway migrations, and serves on **http://localhost:8080**.
-
-Sample data ("Groceries", "Hardware Store" lists with items) is seeded by `V2__seed_sample_data.sql`.
-
-### 2. Frontend
-
-In another terminal:
-
-```bash
-cd frontend
-npm install   # only the first time
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Visit **http://localhost:5173**.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## API reference
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-All endpoints are JSON. CORS is enabled for `http://localhost:5173`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-| Method | Path                              | Body                          | Response          |
-| ------ | --------------------------------- | ----------------------------- | ----------------- |
-| GET    | `/api/lists`                      | —                             | `ShoppingList[]`  |
-| POST   | `/api/lists`                      | `{ "name": "Groceries" }`     | `ShoppingList`    |
-| GET    | `/api/lists/{id}`                 | —                             | `ShoppingList`    |
-| PATCH  | `/api/lists/{id}`                 | `{ "name": "..." }`           | `ShoppingList`    |
-| DELETE | `/api/lists/{id}`                 | —                             | 204 No Content    |
-| POST   | `/api/lists/{listId}/items`       | `{ "name": "Milk" }`          | `ShoppingItem`    |
-| PATCH  | `/api/items/{id}`                 | `{ "name"?, "completed"? }`   | `ShoppingItem`    |
-| DELETE | `/api/items/{id}`                 | —                             | 204 No Content    |
+## Learn More
 
-Errors return:
+To learn more about Next.js, take a look at the following resources:
 
-```json
-{ "status": 400, "error": "Bad Request", "message": "name: Name must not be blank", "timestamp": "..." }
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Environment variables
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-### Frontend (`frontend/.env`)
+## Deploy on Vercel
 
-| Var                    | Default                  | Purpose                |
-| ---------------------- | ------------------------ | ---------------------- |
-| `PUBLIC_API_BASE_URL`  | `http://localhost:8080`  | Base URL for the API   |
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-### Backend (`backend/src/main/resources/application.yml`)
-
-The backend reads the Postgres connection from `spring.datasource.*`. By default it points at `localhost:5432` with user/password/db `grabit`. The `spring-boot-docker-compose` integration starts the container automatically — you don't need to run `docker compose up` yourself.
-
-## Project structure
-
-### Backend (`backend/`)
-
-```
-src/main/kotlin/com/grabit/
-├── GrabitApplication.kt
-├── config/CorsConfig.kt
-├── common/
-│   ├── ApiError.kt
-│   ├── NotFoundException.kt
-│   └── GlobalExceptionHandler.kt
-└── lists/
-    ├── ShoppingListEntity.kt   ShoppingItemEntity.kt
-    ├── ShoppingListRepository.kt   ShoppingItemRepository.kt
-    ├── ShoppingListService.kt
-    ├── ShoppingListController.kt   ShoppingItemController.kt
-    ├── Mappers.kt              # entity ↔ DTO extension fns
-    └── dto/
-        ├── CreateListRequest.kt   UpdateListRequest.kt
-        ├── CreateItemRequest.kt   UpdateItemRequest.kt
-        ├── ShoppingListResponse.kt   ShoppingItemResponse.kt
-
-src/main/resources/
-├── application.yml
-└── db/migration/
-    ├── V1__init_schema.sql
-    └── V2__seed_sample_data.sql
-```
-
-Key choices:
-
-- **JPA entities use plain `class` with mutable fields** (not `data class`) to avoid bidirectional `equals/hashCode` recursion on the list↔items relationship.
-- **DTOs only at the controller layer** — entities are never serialized; mapping uses small extension functions in `Mappers.kt`.
-- **`spring.jpa.open-in-view: false`** with `@EntityGraph(attributePaths = ["items"])` on read repos to avoid N+1 queries.
-- **UUID** primary keys, generated by Hibernate 7's native UUID v4.
-- **Flyway** owns the schema; Hibernate `ddl-auto: validate` only verifies it.
-
-### Frontend (`frontend/`)
-
-```
-src/
-├── app.css           # Tailwind v4 + @theme tokens
-├── lib/
-│   ├── types.ts
-│   ├── api/
-│   │   ├── client.ts
-│   │   └── listsApi.ts
-│   ├── stores/
-│   │   ├── shopping.svelte.ts   # Svelte 5 class store with $state
-│   │   └── sync.svelte.ts       # in-flight counter + $derived status
-│   └── components/
-│       ├── Header.svelte   SyncStatus.svelte
-│       ├── ListCard.svelte   ItemRow.svelte
-│       ├── EmptyState.svelte   Toast.svelte
-└── routes/
-    ├── +layout.ts        # ssr=false + load() → hydrate store
-    ├── +layout.svelte
-    ├── +page.svelte      # dashboard
-    └── lists/[id]/+page.svelte   # list detail
-```
-
-Key choices:
-
-- **Local-first feel**: data loads once from the backend at app start, hydrates the Svelte store, and routes thereafter read from the store — navigation is instant.
-- **Optimistic mutations with revert-on-failure**: every mutation updates the UI immediately, fires the API call, then either reconciles with the server response or reverts and shows a toast.
-- **Counter-based sync state**: `inFlight` increments per request so "Saving…" stays stable through bursts.
-- **SvelteKit SSR disabled** for routes (`ssr = false`) — this is a client-side, network-talking app.
-- **Tailwind v4** via the `@tailwindcss/vite` plugin; theme tokens (green / dark-gray / white palette) live in `src/app.css` under `@theme` — no `tailwind.config.js`.
-
-## Troubleshooting
-
-- **"Inconsistent JVM target compatibility"** — ensure Java 25 is in use: `sdk use java 25.0.2-amzn`. The Gradle daemon is pinned to Java 25 via `backend/gradle.properties → org.gradle.java.home`.
-- **Port 5432 already in use** — another Postgres is running. Stop it (`sudo systemctl stop postgresql`) or change the host port in `compose.yaml`.
-- **Port 8080 / 5173 already in use** — change `server.port` in `application.yml` or pass `--port` to `npm run dev`.
-- **Frontend says "Sync failed"** — make sure the backend is running (`./gradlew bootRun`) and reachable at `PUBLIC_API_BASE_URL`.
-
-## Deferred (out of scope for the first version)
-
-Auth, categories, budgets, sharing, notifications, offline queue, conflict resolution beyond last-write-wins, deployment, hosted DB.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
