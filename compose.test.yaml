@@ -1,4 +1,4 @@
-# Throwaway Postgres for end-to-end tests. Data lives in memory and is lost on stop.
+# Throwaway services for end-to-end tests. Nothing here persists across a restart.
 services:
   db:
     image: postgres:18
@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: grabit
       POSTGRES_DB: grabit_test
     ports:
-      - '5433:5432'
+      - '54331:5432'
     tmpfs:
       - /var/lib/postgresql
     healthcheck:
@@ -15,3 +15,13 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+
+  # Catches the mail the app sends, so tests can read it over HTTP on port 54333.
+  mail:
+    image: axllent/mailpit:latest
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+    ports:
+      - '54332:1025'
+      - '54333:8025'

@@ -1,61 +1,89 @@
-import { expect, test } from '@playwright/test';
+import { expect, newAccount, signIn, signOut, signUp, test } from './fixtures.ts';
 
-const loginPath = '/demo/better-auth/login';
+test('E2E-001 sign up creates an account and starts a session', async ({ page }) => {
+	const account = await signUp(page);
 
-function newAccount(project: string) {
-	const id = `${project}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-	return { name: `Tester ${id}`, email: `${id}@example.test`, password: 'correct-horse-battery' };
-}
-
-test('E2E-001 sign up creates an account and starts a session', async ({ page }, testInfo) => {
-	const account = newAccount(testInfo.project.name);
-
-	await page.goto(loginPath);
-	await page.getByLabel('Email').fill(account.email);
-	await page.getByLabel('Password').fill(account.password);
-	await page.getByLabel('Name (for registration)').fill(account.name);
-	await page.getByRole('button', { name: 'Register' }).click();
-
-	await expect(page.getByRole('heading', { name: `Hi, ${account.name}!` })).toBeVisible();
+	await expect(page).toHaveURL(/\/$/);
+	await page.goto('/settings');
+	await expect(page.getByText(account.email)).toBeVisible();
 });
 
-test('E2E-002 sign out ends the session and sign in restores it', async ({ page }, testInfo) => {
-	const account = newAccount(testInfo.project.name);
+test('E2E-002 sign out ends the session and sign in restores it', async ({ page }) => {
+	const account = await signUp(page);
+	await signOut(page);
 
-	await page.goto(loginPath);
-	await page.getByLabel('Email').fill(account.email);
-	await page.getByLabel('Password').fill(account.password);
-	await page.getByLabel('Name (for registration)').fill(account.name);
-	await page.getByRole('button', { name: 'Register' }).click();
-	await expect(page.getByRole('heading', { name: `Hi, ${account.name}!` })).toBeVisible();
+	await page.goto('/settings');
+	await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings$/);
 
-	await page.getByRole('button', { name: 'Sign out' }).click();
-	await expect(page).toHaveURL(new RegExp(`${loginPath}$`));
-
-	// A signed-out visitor is sent back to the login page.
-	await page.goto('/demo/better-auth');
-	await expect(page).toHaveURL(new RegExp(`${loginPath}$`));
-
-	await page.getByLabel('Email').fill(account.email);
-	await page.getByLabel('Password').fill(account.password);
-	await page.getByRole('button', { name: 'Login' }).click();
-	await expect(page.getByRole('heading', { name: `Hi, ${account.name}!` })).toBeVisible();
+	await signIn(page, account.email, account.password);
+	await expect(page.getByText(account.email)).toBeVisible();
 });
 
-test('E2E-003 sign in with a wrong password is refused', async ({ page }, testInfo) => {
-	const account = newAccount(testInfo.project.name);
+test('E2E-003 sign in with a wrong password is refused', async ({ page }) => {
+	const account = await signUp(page);
+	await signOut(page);
 
-	await page.goto(loginPath);
+	await signIn(page, account.email, 'not-the-password');
+
+	await expect(page.getByRole('alert')).toHaveText('Invalid email or password.');
+	await expect(page).toHaveURL(/\/sign-in/);
+	await expect(page.getByLabel('Email')).toHaveValue(account.email);
+});
+
+test('E2E-004 a signed-out visitor is sent to sign in and back to the page they asked for', async ({
+	page
+}) => {
+	const account = await signUp(page);
+	await signOut(page);
+
+	await page.goto('/templates');
+	await expect(page).toHaveURL(/\/sign-in\?next=%2Ftemplates$/);
+
+	await signIn(page, account.email, account.password);
+	await expect(page).toHaveURL(/\/templates$/);
+	await expect(page.getByRole('heading', { name: 'Templates', level: 1 })).toBeVisible();
+});
+
+test('E2E-005 sign up with an email that already has an account is refused', async ({ page }) => {
+	const account = await signUp(page);
+	await signOut(page);
+
+	await page.goto('/sign-up');
+	await page.getByLabel('Name').fill('Someone Else');
 	await page.getByLabel('Email').fill(account.email);
-	await page.getByLabel('Password').fill(account.password);
-	await page.getByLabel('Name (for registration)').fill(account.name);
-	await page.getByRole('button', { name: 'Register' }).click();
-	await page.getByRole('button', { name: 'Sign out' }).click();
+	await page.getByLabel('Password').fill('another-password');
+	await page.getByRole('button', { name: 'Create account' }).click();
 
-	await page.getByLabel('Email').fill(account.email);
-	await page.getByLabel('Password').fill('not-the-password');
-	await page.getByRole('button', { name: 'Login' }).click();
+	await expect(page.getByRole('alert')).toBeVisible();
+	await expect(page).toHaveURL(/\/sign-up/);
+});
 
-	await expect(page.getByText('Invalid email or password')).toBeVisible();
-	await expect(page).toHaveURL(new RegExp(`${loginPath}`));
+test('E2E-006 a signed-in user is sent away from the sign-in page', async ({ page }) => {
+	await signUp(page);
+
+	await page.goto('/sign-in');
+	await expect(page).toHaveURL(/\/$/);
+	await expect(page.getByRole('heading', { name: 'Lists', level: 1 })).toBeVisible();
+});
+
+test.describe('without JavaScript', () => {
+	test.use({ javaScriptEnabled: false });
+
+	test('E2E-007 sign up, sign out and sign in work as plain form posts', async ({ page }) => {
+		const account = newAccount();
+
+		await page.goto('/sign-up');
+		await page.getByLabel('Name').fill(account.name);
+		await page.getByLabel('Email').fill(account.email);
+		await page.getByLabel('Password').fill(account.password);
+		await page.getByRole('button', { name: 'Create account' }).click();
+		await expect(page.getByRole('heading', { name: 'Lists', level: 1 })).toBeVisible();
+
+		await page.goto('/settings');
+		await page.getByRole('button', { name: 'Sign out' }).click();
+		await expect(page).toHaveURL(/\/sign-in$/);
+
+		await signIn(page, account.email, account.password);
+		await expect(page.getByRole('heading', { name: 'Lists', level: 1 })).toBeVisible();
+	});
 });

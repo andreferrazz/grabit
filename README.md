@@ -24,7 +24,7 @@ npm run dev
 End-to-end only. Every test is listed in [E2E.md](E2E.md).
 
 ```sh
-npm run test:db    # start the throwaway test Postgres (port 5433)
+npm run test:db    # start the throwaway test Postgres
 npm run test:e2e
 ```
 

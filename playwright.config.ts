@@ -3,7 +3,8 @@ import { assertTestDatabase, testEnv } from './e2e/env.ts';
 
 assertTestDatabase(testEnv.DATABASE_URL);
 
-const port = 4173;
+// Uncommon ports throughout, so other projects testing on this machine do not collide.
+const port = 43173;
 
 export default defineConfig({
 	testDir: 'e2e',
@@ -26,9 +27,14 @@ export default defineConfig({
 	],
 	webServer: {
 		// The production build, started with the test environment only.
-		command: 'npm run build && node build',
+		command: 'npm run build && exec node build',
 		port,
 		reuseExistingServer: false,
-		env: { ...testEnv, PORT: String(port), PROTOCOL_HEADER: 'x-forwarded-proto' }
+		env: {
+			...testEnv,
+			PORT: String(port),
+			PROTOCOL_HEADER: 'x-forwarded-proto',
+			ADDRESS_HEADER: 'x-forwarded-for'
+		}
 	}
 });
