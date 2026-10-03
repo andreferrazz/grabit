@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '#lib/server/auth.ts';
-import { safeNext, text } from '#lib/server/forms.ts';
+import { oauthContinuation, safeNext, text } from '#lib/server/forms.ts';
 import { allow, authLimits, TOO_MANY_ATTEMPTS } from '#lib/server/rate-limit.ts';
 import type { Actions } from './$types';
 
@@ -25,6 +25,6 @@ export const actions: Actions = {
 			throw error;
 		}
 
-		redirect(303, safeNext(event.url.searchParams.get('next')));
+		redirect(303, oauthContinuation(event.url) ?? safeNext(event.url.searchParams.get('next')));
 	}
 };

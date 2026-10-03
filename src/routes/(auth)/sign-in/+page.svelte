@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const passwordWasReset = $derived(page.url.searchParams.has('reset'));
 </script>
@@ -11,7 +11,9 @@
 <svelte:head><title>Sign in · Grabit</title></svelte:head>
 
 <h1 class="text-xl font-semibold text-ink">Sign in</h1>
-<p class="mt-1 text-sm text-ink-muted">Welcome back.</p>
+<p class="mt-1 text-sm text-ink-muted">
+	{data.oauthQuery ? 'Sign in to connect an app to your Grabit account.' : 'Welcome back.'}
+</p>
 
 {#if passwordWasReset && !form}
 	<p class="mt-4 rounded-xl bg-brand-soft px-3 py-2 text-sm text-ink" role="status">
@@ -52,6 +54,8 @@
 </form>
 
 <p class="mt-6 flex justify-between text-sm">
-	<a class="font-medium text-brand hover:underline" href="/sign-up">Create an account</a>
+	<a class="font-medium text-brand hover:underline" href="/sign-up{data.oauthQuery}"
+		>Create an account</a
+	>
 	<a class="text-ink-muted hover:underline" href="/forgot-password">Forgot password?</a>
 </p>

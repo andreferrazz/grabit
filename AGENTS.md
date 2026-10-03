@@ -48,6 +48,18 @@ npm run test:db      # start the throwaway test Postgres
 npm run test:e2e     # build, then run Playwright against the test database
 ```
 
+## Auth schema
+
+After changing Better Auth plugins, regenerate the Drizzle schema and a migration:
+
+```sh
+set -a; . ./.env.test; set +a
+mv src/service-worker/tsconfig.json /tmp/   # the auth CLI cannot resolve its "extends"
+npm run auth:schema
+mv /tmp/tsconfig.json src/service-worker/
+npm run format && npm run db:generate -- --name <what-changed>
+```
+
 ## Secrets
 
 `.env` is untracked and holds real credentials. Never print it, commit it, or copy

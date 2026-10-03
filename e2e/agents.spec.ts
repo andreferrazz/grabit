@@ -257,6 +257,7 @@ test('E2E-055 Settings shows how to connect an agent to this server', async ({ p
 		`${baseURL}/api/v1/lists`
 	);
 	await expect(page.getByRole('link', { name: '/api/v1/openapi.json' })).toBeVisible();
+	await expect(page.getByLabel('connector address', { exact: true })).toHaveText(`${baseURL}/mcp`);
 
 	// Once a token exists on the page, the examples carry it, ready to paste.
 	const token = await createToken(page);

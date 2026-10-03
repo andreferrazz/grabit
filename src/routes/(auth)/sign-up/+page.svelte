@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 </script>
 
 <svelte:head><title>Create an account · Grabit</title></svelte:head>
@@ -60,5 +60,5 @@
 
 <p class="mt-6 text-sm text-ink-muted">
 	Already have an account?
-	<a class="font-medium text-brand hover:underline" href="/sign-in">Sign in</a>
+	<a class="font-medium text-brand hover:underline" href="/sign-in{data.oauthQuery}">Sign in</a>
 </p>

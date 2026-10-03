@@ -16,11 +16,14 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
 		"db:studio": "drizzle-kit studio",
-		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
+		"auth:schema": "NODE_OPTIONS=--unhandled-rejections=warn auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
 		"test:db": "docker compose -f compose.test.yaml up -d --wait"
 	},
 	"devDependencies": {
 		"@better-auth/api-key": "^1.7.7",
+		"@better-auth/cimd": "^1.7.7",
+		"@better-auth/mcp": "^1.7.7",
+		"@better-auth/oauth-provider": "^1.7.7",
 		"@eslint/js": "^10.0.1",
 		"@modelcontextprotocol/server": "^2.3.0",
 		"@playwright/test": "^1.60.0",
@@ -37,6 +40,7 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
+		"jose": "^6.2.12",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
