@@ -1,8 +1,16 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { PageData } from './$types';
+	import CodeBlock from '#lib/components/CodeBlock.svelte';
+	import Icon from '#lib/components/Icon.svelte';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	const created = $derived(form && 'createdToken' in form ? form.createdToken : undefined);
+	const tokenError = $derived(form && 'tokenError' in form ? form.tokenError : undefined);
+	const tokenForExamples = $derived(created?.key ?? '<your token>');
+
+	const date = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
 </script>
 
 <svelte:head><title>Settings · Grabit</title></svelte:head>
@@ -24,4 +32,93 @@
 	<form method="post" action="?/signOut" use:enhance class="mt-5">
 		<button class="btn btn-quiet">Sign out</button>
 	</form>
+</section>
+
+<section class="card mt-4 p-5" aria-labelledby="tokens-heading">
+	<h2 id="tokens-heading" class="text-sm font-semibold text-ink">API tokens</h2>
+	<p class="mt-1 text-sm text-ink-muted">
+		A token lets an AI agent or a script read and change your lists and templates. It cannot sign in
+		as you or change your account.
+	</p>
+
+	{#if created}
+		<div class="mt-4 rounded-xl border border-brand bg-brand-soft p-3" role="status">
+			<p class="text-sm font-medium text-ink">
+				Token “{created.name}” created. Copy it now: it will not be shown again.
+			</p>
+			<div class="mt-2">
+				<CodeBlock code={created.key} label="new token" />
+			</div>
+		</div>
+	{/if}
+
+	<form method="post" action="?/createToken" use:enhance class="mt-4 flex gap-2">
+		<input
+			class="field"
+			name="name"
+			placeholder="Token name, e.g. Claude"
+			aria-label="Token name"
+			required
+			maxlength="32"
+			autocomplete="off"
+		/>
+		<button class="btn btn-primary shrink-0">
+			<Icon name="key" class="size-4" />
+			Create token
+		</button>
+	</form>
+	{#if tokenError}
+		<p class="mt-2 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+			{tokenError}
+		</p>
+	{/if}
+
+	{#if data.tokens.length > 0}
+		<ul class="mt-4 divide-y divide-border" aria-label="Your tokens">
+			{#each data.tokens as token (token.id)}
+				<li class="flex items-center justify-between gap-3 py-3">
+					<div class="min-w-0">
+						<p class="truncate text-sm font-medium text-ink">{token.name}</p>
+						<p class="text-xs text-ink-muted">
+							<code>{token.start}…</code> · created {date.format(token.createdAt)} ·
+							{token.lastUsedAt ? `last used ${date.format(token.lastUsedAt)}` : 'never used'}
+						</p>
+					</div>
+					<form method="post" action="?/revokeToken" use:enhance>
+						<input type="hidden" name="id" value={token.id} />
+						<button class="btn btn-danger" aria-label="Revoke {token.name}">Revoke</button>
+					</form>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</section>
+
+<section class="card mt-4 p-5" aria-labelledby="connect-heading">
+	<h2 id="connect-heading" class="text-sm font-semibold text-ink">Connect an AI agent</h2>
+
+	<h3 class="mt-4 text-sm font-medium text-ink">Claude Code and other MCP clients</h3>
+	<p class="mt-1 text-sm text-ink-muted">
+		Grabit is an MCP server at <code>{data.origin}/mcp</code>. Create a token above, then run:
+	</p>
+	<div class="mt-2">
+		<CodeBlock
+			label="MCP command"
+			code={`claude mcp add --transport http grabit ${data.origin}/mcp --header "Authorization: Bearer ${tokenForExamples}"`}
+		/>
+	</div>
+
+	<h3 class="mt-5 text-sm font-medium text-ink">REST API</h3>
+	<p class="mt-1 text-sm text-ink-muted">
+		The same operations as JSON over HTTP. The full description is at
+		<a class="font-medium text-brand hover:underline" href="/api/v1/openapi.json"
+			>/api/v1/openapi.json</a
+		>.
+	</p>
+	<div class="mt-2">
+		<CodeBlock
+			label="REST example"
+			code={`curl -H "Authorization: Bearer ${tokenForExamples}" ${data.origin}/api/v1/lists`}
+		/>
+	</div>
 </section>

@@ -82,7 +82,9 @@ export const removeTemplateItem = defineOperation({
 	input: z.object({ templateId, itemId }),
 	handler: (userId, input) => templates.removeItems(userId, input.templateId, [input.itemId]),
 	rest: { method: 'DELETE', path: '/templates/:templateId/items/:itemId' },
-	destructive: true
+	destructive: true,
+	// MCP clients use the plural tool, which removes one or many.
+	mcp: false
 });
 
 export const removeTemplateItems = defineOperation({

@@ -2,6 +2,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { operations } from '#lib/server/operations/index.ts';
 import { run, type Operation } from '#lib/server/operations/registry.ts';
 import { authenticate } from './authenticate.ts';
+import { openApiDocument } from './openapi.ts';
 import { errorResponse, fromError, json } from './respond.ts';
 
 type Route = { operation: Operation; pattern: RegExp; params: string[] };
@@ -18,6 +19,14 @@ const routes: Route[] = operations.map((operation) => {
 /** Serves `/api/v1/*` by finding the operation whose method and path match. */
 export async function handleApi(event: RequestEvent, path: string): Promise<Response> {
 	const method = event.request.method;
+
+	// The API description is public, so agents can read it before they have a token.
+	if (path === '/openapi.json' && method === 'GET') {
+		return Response.json(openApiDocument(event.url.origin), {
+			headers: { 'cache-control': 'public, max-age=300' }
+		});
+	}
+
 	const matches = routes
 		.map((route) => ({ route, match: route.pattern.exec(path) }))
 		.filter((candidate) => candidate.match);
@@ -30,11 +39,20 @@ export async function handleApi(event: RequestEvent, path: string): Promise<Resp
 		return errorResponse(405, 'METHOD_NOT_ALLOWED', `Use ${allow}.`, undefined, { allow });
 	}
 
-	const caller = await authenticate(event);
-	if (!caller) {
-		return errorResponse(401, 'UNAUTHENTICATED', 'Sign in or send an API token.', undefined, {
-			'www-authenticate': 'Bearer'
-		});
+	const caller = await authenticate(event, { allowSession: true });
+	if (!caller.ok) {
+		if (caller.reason === 'rate_limited') {
+			return errorResponse(429, 'RATE_LIMITED', 'Too many requests with this token. Slow down.');
+		}
+		return errorResponse(
+			401,
+			'UNAUTHENTICATED',
+			caller.reason === 'invalid'
+				? 'The API token is not valid.'
+				: 'Send an API token as Authorization: Bearer <token>.',
+			undefined,
+			{ 'www-authenticate': 'Bearer' }
+		);
 	}
 
 	let body: Record<string, unknown> = {};

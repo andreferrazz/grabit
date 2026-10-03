@@ -108,7 +108,9 @@ export const removeItem = defineOperation({
 	input: z.object({ listId, itemId }),
 	handler: (userId, input) => lists.removeItems(userId, input.listId, [input.itemId]),
 	rest: { method: 'DELETE', path: '/lists/:listId/items/:itemId' },
-	destructive: true
+	destructive: true,
+	// MCP clients use the plural tool, which removes one or many.
+	mcp: false
 });
 
 export const removeItems = defineOperation({

@@ -20,7 +20,7 @@ const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 /** Routes for agents and scripts: no ambient cookie is trusted there without a JSON body. */
 function isApiRoute(pathname: string): boolean {
-	return pathname.startsWith('/api/v1/');
+	return pathname.startsWith('/api/v1/') || pathname === '/mcp';
 }
 
 /**

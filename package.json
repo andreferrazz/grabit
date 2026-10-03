@@ -20,7 +20,9 @@
 		"test:db": "docker compose -f compose.test.yaml up -d --wait"
 	},
 	"devDependencies": {
+		"@better-auth/api-key": "^1.7.7",
 		"@eslint/js": "^10.0.1",
+		"@modelcontextprotocol/server": "^2.3.0",
 		"@playwright/test": "^1.60.0",
 		"@sveltejs/adapter-node": "^6.0.0",
 		"@sveltejs/kit": "^3.0.0",

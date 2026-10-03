@@ -20,6 +20,8 @@ export type Operation<Input extends z.ZodType = z.ZodType, Output = unknown> = {
 	/** Hints for MCP clients. */
 	readOnly?: boolean;
 	destructive?: boolean;
+	/** false leaves the operation out of the MCP tools, when another tool already covers it. */
+	mcp?: boolean;
 };
 
 export function defineOperation<Input extends z.ZodType, Output>(

@@ -1,4 +1,5 @@
 import { ORIGIN, BETTER_AUTH_SECRET } from '$app/env/private';
+import { apiKey } from '@better-auth/api-key';
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
@@ -32,6 +33,14 @@ export const auth = betterAuth({
 		}
 	},
 	plugins: [
+		// Personal API tokens for agents and scripts. A token only identifies its owner to
+		// /api/v1 and /mcp; it never becomes a browser session (enableSessionForAPIKeys is
+		// off), so a leaked token cannot change the password or create more tokens.
+		apiKey({
+			defaultPrefix: 'grabit_',
+			// The plugin's own default is 10 requests a day, far too low for an agent.
+			rateLimit: { enabled: true, timeWindow: 60_000, maxRequests: 120 }
+		}),
 		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
 	]
 });
