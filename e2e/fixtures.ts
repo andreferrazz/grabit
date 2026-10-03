@@ -75,3 +75,20 @@ export async function addItem(page: Page, name: string): Promise<void> {
 export async function saved(page: Page): Promise<void> {
 	await page.waitForLoadState('networkidle');
 }
+
+export async function createTemplate(
+	page: Page,
+	name: string,
+	items: string[] = []
+): Promise<void> {
+	await page.goto('/templates');
+	await page.getByLabel('New template name').fill(name);
+	await page.getByRole('button', { name: 'Create' }).click();
+	await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible();
+	for (const item of items) {
+		await page.getByLabel('Add an item').fill(item);
+		await page.getByLabel('Add an item').press('Enter');
+		await expect(page.getByRole('listitem').filter({ hasText: item })).toBeVisible();
+	}
+	await saved(page);
+}

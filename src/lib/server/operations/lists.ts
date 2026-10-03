@@ -26,12 +26,18 @@ export const getList = defineOperation({
 
 export const createList = defineOperation({
 	name: 'create_list',
-	description: 'Create a checklist, optionally with its first items. Returns the new list.',
-	input: z.object({
-		id: id.optional().describe('Client-chosen id for the list. Generated when omitted.'),
-		name: name.describe('The list name.'),
-		items: newListItems.optional().describe('Items to add, as names or objects.')
-	}),
+	description:
+		"Create a checklist. Give a name, or a templateId to copy a template's items (the name then defaults to the template's). Extra items are added after the copied ones. Returns the new list.",
+	input: z
+		.object({
+			id: id.optional().describe('Client-chosen id for the list. Generated when omitted.'),
+			name: name.optional().describe('The list name. Required unless templateId is given.'),
+			templateId: id.optional().describe('Copy the items of this template into the new list.'),
+			items: newListItems.optional().describe('Items to add, as names or objects.')
+		})
+		.refine((input) => input.name !== undefined || input.templateId !== undefined, {
+			message: 'Give a name or a templateId.'
+		}),
 	handler: (userId, input) => lists.createList(userId, input),
 	rest: { method: 'POST', path: '/lists', status: 201 }
 });

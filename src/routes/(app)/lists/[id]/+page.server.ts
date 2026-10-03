@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { text } from '#lib/server/forms.ts';
 import * as ops from '#lib/server/operations/lists.ts';
 import { run } from '#lib/server/operations/registry.ts';
+import { saveListAsTemplate } from '#lib/server/operations/templates.ts';
 import { ServiceError } from '#lib/server/services/errors.ts';
 import { attempt, requireUserId } from '#lib/server/session.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -112,6 +113,18 @@ export const actions: Actions = {
 	clearChecked: async (event) => {
 		const userId = requireUserId(event);
 		return attempt(() => run(ops.clearChecked, userId, { listId: event.params.id }));
+	},
+
+	saveAsTemplate: async (event) => {
+		const userId = requireUserId(event);
+
+		let templateId = '';
+		const failure = await attempt(async () => {
+			templateId = (await run(saveListAsTemplate, userId, { listId: event.params.id })).id;
+		});
+		if (failure) return failure;
+
+		redirect(303, `/templates/${templateId}`);
 	},
 
 	delete: async (event) => {

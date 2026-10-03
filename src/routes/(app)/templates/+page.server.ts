@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { text } from '#lib/server/forms.ts';
 import { createList } from '#lib/server/operations/lists.ts';
 import { run } from '#lib/server/operations/registry.ts';
-import { listTemplates } from '#lib/server/operations/templates.ts';
+import { createTemplate, listTemplates } from '#lib/server/operations/templates.ts';
 import { attempt, requireUserId } from '#lib/server/session.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -15,17 +15,17 @@ export const actions: Actions = {
 		const userId = requireUserId(event);
 		const data = await event.request.formData();
 
-		let listId = '';
+		let templateId = '';
 		const failure = await attempt(async () => {
-			const list = await run(createList, userId, { name: text(data, 'name') });
-			listId = list.id;
+			templateId = (await run(createTemplate, userId, { name: text(data, 'name') })).id;
 		});
 		if (failure) return failure;
 
-		redirect(303, `/lists/${listId}`);
+		redirect(303, `/templates/${templateId}`);
 	},
 
-	fromTemplate: async (event) => {
+	// Makes a new list with a copy of the template's items and opens it.
+	use: async (event) => {
 		const userId = requireUserId(event);
 		const data = await event.request.formData();
 

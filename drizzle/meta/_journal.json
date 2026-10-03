@@ -15,6 +15,13 @@
       "when": 1791059935994,
       "tag": "0001_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791060584978,
+      "tag": "0002_templates",
+      "breakpoints": true
     }
   ]
 }

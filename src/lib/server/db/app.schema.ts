@@ -16,6 +16,39 @@ const timestamps = {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 };
 
+export const templates = pgTable(
+	'templates',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		...timestamps
+	},
+	(table) => [
+		index('templates_user_name_idx').on(table.userId, table.name),
+		check('templates_name_length', sql`char_length(${table.name}) between 1 and 200`)
+	]
+);
+
+export const templateItems = pgTable(
+	'template_items',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		templateId: uuid('template_id')
+			.notNull()
+			.references(() => templates.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		position: integer('position').notNull(),
+		...timestamps
+	},
+	(table) => [
+		index('template_items_template_position_idx').on(table.templateId, table.position),
+		check('template_items_name_length', sql`char_length(${table.name}) between 1 and 200`)
+	]
+);
+
 export const lists = pgTable(
 	'lists',
 	{
@@ -25,7 +58,7 @@ export const lists = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' }),
 		name: text('name').notNull(),
 		// Where the list came from. Items are copied at creation, so this is provenance only.
-		templateId: uuid('template_id'),
+		templateId: uuid('template_id').references(() => templates.id, { onDelete: 'set null' }),
 		...timestamps
 	},
 	(table) => [

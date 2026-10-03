@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
-import { listItems, lists } from '#lib/server/db/schema.ts';
+import { listItems, lists, templateItems, templates } from '#lib/server/db/schema.ts';
 import { isUniqueViolation, ServiceError } from './errors.ts';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -123,18 +123,63 @@ export async function getList(userId: string, listId: string): Promise<ListDetai
 
 export async function createList(
 	userId: string,
-	input: { id?: string; name: string; items?: NewItem[] }
+	input: { id?: string; name?: string; templateId?: string; items?: NewItem[] }
 ): Promise<ListDetail> {
 	return withConflict('A list or item', () =>
 		db.transaction(async (tx) => {
+			let name = input.name;
+			let copied: NewItem[] = [];
+
+			if (input.templateId) {
+				const [template] = await tx
+					.select()
+					.from(templates)
+					.where(and(eq(templates.id, input.templateId), eq(templates.userId, userId)));
+				if (!template) throw new ServiceError('NOT_FOUND', 'Template not found.');
+				name ??= template.name;
+				// A snapshot: later edits to the template do not reach this list.
+				copied = await tx
+					.select({ name: templateItems.name })
+					.from(templateItems)
+					.where(eq(templateItems.templateId, template.id))
+					.orderBy(asc(templateItems.position), asc(templateItems.id));
+			}
+			if (!name) throw new ServiceError('VALIDATION', 'A name is required.');
+
 			const [list] = await tx
 				.insert(lists)
-				.values({ id: input.id, userId, name: input.name })
+				.values({ id: input.id, userId, name, templateId: input.templateId })
 				.returning({ id: lists.id });
-			if (input.items?.length) await insertItems(tx, list.id, input.items);
+			const items = [...copied, ...(input.items ?? [])];
+			if (items.length) await insertItems(tx, list.id, items);
 			return readList(tx, userId, list.id);
 		})
 	);
+}
+
+/** Copies a list's items, in order and without their checked state, into a new template. */
+export async function saveListAsTemplate(
+	userId: string,
+	listId: string,
+	name?: string
+): Promise<{ id: string; name: string; itemCount: number }> {
+	return db.transaction(async (tx) => {
+		const list = await readList(tx, userId, listId);
+		const [template] = await tx
+			.insert(templates)
+			.values({ userId, name: name ?? list.name })
+			.returning({ id: templates.id, name: templates.name });
+		if (list.items.length) {
+			await tx.insert(templateItems).values(
+				list.items.map((item, position) => ({
+					templateId: template.id,
+					name: item.name,
+					position
+				}))
+			);
+		}
+		return { ...template, itemCount: list.items.length };
+	});
 }
 
 export async function renameList(

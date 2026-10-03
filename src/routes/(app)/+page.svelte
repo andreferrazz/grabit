@@ -33,6 +33,27 @@
 	</p>
 {/if}
 
+{#if data.templates.length > 0}
+	<div
+		class="mt-3 flex flex-wrap items-center gap-2"
+		role="group"
+		aria-label="Start from a template"
+	>
+		<span class="text-sm text-ink-muted">Start from a template:</span>
+		{#each data.templates as template (template.id)}
+			<form method="post" action="?/fromTemplate" use:enhance>
+				<input type="hidden" name="templateId" value={template.id} />
+				<button
+					class="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-ink transition hover:border-brand hover:bg-brand-soft"
+				>
+					<Icon name="copy" class="size-3.5 text-ink-muted" />
+					{template.name}
+				</button>
+			</form>
+		{/each}
+	</div>
+{/if}
+
 {#if data.lists.length === 0}
 	<div class="mt-6">
 		<EmptyState icon="lists" title="No lists yet">

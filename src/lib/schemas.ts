@@ -25,3 +25,16 @@ export const newListItems = z
 	.transform((items) => items.map((item) => (typeof item === 'string' ? { name: item } : item)));
 
 export const idList = z.array(id).min(1).max(500);
+
+/** A new template item. `id` and `position` are optional so a deleted item can be put back exactly. */
+export const newTemplateItem = z.object({
+	id: id.optional().describe('Client-chosen id. Generated when omitted.'),
+	name: name.describe('The item text.'),
+	position: z.number().int().min(0).optional().describe('Sort position. Appended when omitted.')
+});
+
+export const newTemplateItems = z
+	.array(z.union([name, newTemplateItem]))
+	.min(1)
+	.max(500)
+	.transform((items) => items.map((item) => (typeof item === 'string' ? { name: item } : item)));
