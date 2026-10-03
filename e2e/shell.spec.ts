@@ -49,3 +49,16 @@ test('E2E-013 the health endpoint reports ok when the database answers', async (
 	expect(response.status()).toBe(200);
 	expect(await response.json()).toEqual({ status: 'ok' });
 });
+
+test('E2E-022 a form post from another site is refused', async ({ request }) => {
+	const form = { email: 'someone@example.test', password: 'whatever-it-is' };
+
+	const crossSite = await request.post('/sign-in', {
+		form,
+		headers: { origin: 'https://evil.example' }
+	});
+	expect(crossSite.status()).toBe(403);
+
+	const noOrigin = await request.post('/sign-in', { form });
+	expect(noOrigin.status()).toBe(403);
+});

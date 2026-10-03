@@ -15,6 +15,38 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
+const formContentTypes = ['application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain'];
+const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+/** Routes for agents and scripts: no ambient cookie is trusted there without a JSON body. */
+function isApiRoute(pathname: string): boolean {
+	return pathname.startsWith('/api/v1/');
+}
+
+/**
+ * Cross-site request forgery check for the pages: a form submission must come
+ * from this site. This is SvelteKit's own rule (disabled in vite.config.ts),
+ * applied everywhere except the API routes.
+ */
+const handleCsrf: Handle = ({ event, resolve }) => {
+	const { request, url } = event;
+	const contentType = request.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+	const isForm = !contentType || formContentTypes.includes(contentType);
+
+	if (
+		mutatingMethods.includes(request.method) &&
+		isForm &&
+		!isApiRoute(url.pathname) &&
+		request.headers.get('origin') !== url.origin
+	) {
+		return new Response(`Cross-site ${request.method} form submissions are forbidden`, {
+			status: 403
+		});
+	}
+
+	return resolve(event);
+};
+
 /** Applies a theme forced in Settings before the page paints, so there is no flash. */
 const handleTheme: Handle = ({ event, resolve }) => {
 	const theme = event.cookies.get('theme');
@@ -25,4 +57,4 @@ const handleTheme: Handle = ({ event, resolve }) => {
 	});
 };
 
-export const handle: Handle = sequence(handleTheme, handleBetterAuth);
+export const handle: Handle = sequence(handleCsrf, handleTheme, handleBetterAuth);

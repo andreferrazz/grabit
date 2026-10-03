@@ -12,7 +12,11 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			adapter: adapter(),
+			// SvelteKit's built-in check also rejects API calls that carry no Origin header
+			// (curl, agents, OAuth token requests). It is turned off here and re-applied in
+			// hooks.server.ts to every route except the token-authenticated API.
+			csrf: { trustedOrigins: ['*'] }
 		})
 	]
 });

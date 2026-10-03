@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Browser, type Page } from '@playwright/test';
 
 export { expect };
 
@@ -14,10 +14,20 @@ function randomAddress(): string {
  * visitors would behind the production proxy. This keeps the per-address rate
  * limits from leaking between tests.
  */
+function visitorHeaders() {
+	return { 'x-forwarded-proto': 'http', 'x-forwarded-for': randomAddress() };
+}
+
+/** A second, separate visitor (own cookies, own address) for tests about two users. */
+export async function otherVisitor(browser: Browser, baseURL: string | undefined): Promise<Page> {
+	const context = await browser.newContext({ baseURL, extraHTTPHeaders: visitorHeaders() });
+	return context.newPage();
+}
+
 export const test = base.extend({
 	// eslint-disable-next-line no-empty-pattern -- Playwright requires the destructuring form
 	extraHTTPHeaders: async ({}, use) => {
-		await use({ 'x-forwarded-proto': 'http', 'x-forwarded-for': randomAddress() });
+		await use(visitorHeaders());
 	}
 });
 
