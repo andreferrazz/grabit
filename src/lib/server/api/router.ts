@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { operations } from '#lib/server/operations/index.ts';
 import { run, type Operation } from '#lib/server/operations/registry.ts';
+import { allow } from '#lib/server/rate-limit.ts';
 import { authenticate } from './authenticate.ts';
 import { openApiDocument } from './openapi.ts';
 import { errorResponse, fromError, json } from './respond.ts';
@@ -53,6 +54,12 @@ export async function handleApi(event: RequestEvent, path: string): Promise<Resp
 			undefined,
 			{ 'www-authenticate': 'Bearer' }
 		);
+	}
+
+	// Tokens are limited by Better Auth; a browser session gets its own allowance so a
+	// runaway script in a signed-in tab cannot hammer the API either.
+	if (caller.via === 'session' && !allow(`api:${caller.userId}`, 300, 60_000)) {
+		return errorResponse(429, 'RATE_LIMITED', 'Too many requests. Slow down.');
 	}
 
 	let body: Record<string, unknown> = {};

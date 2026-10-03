@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      # Node comes from mise.toml, the same pin developers and the Dockerfile follow.
+      - uses: jdx/mise-action@v3
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run check
+        env:
+          # SvelteKit validates declared variables when it syncs; these are placeholders.
+          DATABASE_URL: postgres://placeholder/db
+          ORIGIN: https://placeholder.invalid
+          BETTER_AUTH_SECRET: placeholder-placeholder-placeholder
+          SMTP_HOST: placeholder
+          SMTP_PORT: '587'
+          SMTP_USER: placeholder
+          SMTP_PASS: placeholder
+          SMTP_FROM: placeholder
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Start the test database and mail catcher
+        run: npm run test:db
+
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Keep traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-results
+          path: test-results
+          retention-days: 7
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the production image
+        run: docker build -t grabit .
