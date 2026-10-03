@@ -57,3 +57,21 @@ export async function signOut(page: Page): Promise<void> {
 	await page.getByRole('button', { name: 'Sign out' }).click();
 	await expect(page).toHaveURL(/\/sign-in$/);
 }
+
+export async function createList(page: Page, name: string): Promise<void> {
+	await page.goto('/');
+	await page.getByLabel('New list name').fill(name);
+	await page.getByRole('button', { name: 'Create' }).click();
+	await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible();
+}
+
+export async function addItem(page: Page, name: string): Promise<void> {
+	await page.getByLabel('Add an item').fill(name);
+	await page.getByLabel('Add an item').press('Enter');
+	await expect(page.getByRole('checkbox', { name, exact: true })).toBeVisible();
+}
+
+/** Waits until the app has no change still being saved. */
+export async function saved(page: Page): Promise<void> {
+	await page.waitForLoadState('networkidle');
+}

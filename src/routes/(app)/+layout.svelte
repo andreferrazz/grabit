@@ -2,8 +2,14 @@
 	import { page } from '$app/state';
 	import Icon, { type IconName } from '#lib/components/Icon.svelte';
 	import Logo from '#lib/components/Logo.svelte';
+	import Toasts from '#lib/components/Toasts.svelte';
+	import { provideToasts } from '#lib/state/toasts.svelte.ts';
+	import type { LayoutData } from './$types';
+	import type { Snippet } from 'svelte';
 
-	let { children } = $props();
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
+
+	provideToasts();
 
 	const tabs: { href: string; label: string; icon: IconName; match: (path: string) => boolean }[] =
 		[
@@ -49,11 +55,41 @@
 				</a>
 			{/each}
 		</nav>
+
+		{#if data.lists.length > 0}
+			<nav aria-label="Your lists" class="-mx-1 flex min-h-0 flex-col gap-0.5 overflow-y-auto px-1">
+				<h2 class="px-3 pb-1 text-xs font-semibold tracking-wide text-ink-subtle uppercase">
+					Your lists
+				</h2>
+				{#each data.lists as list (list.id)}
+					{@const active = page.url.pathname === `/lists/${list.id}`}
+					<a
+						href="/lists/{list.id}"
+						aria-current={active ? 'page' : undefined}
+						class={[
+							'flex min-h-9 items-center justify-between gap-2 rounded-lg px-3 text-sm transition',
+							active
+								? 'bg-surface-3 font-medium text-ink'
+								: 'text-ink-muted hover:bg-surface-3 hover:text-ink'
+						]}
+					>
+						<span class="truncate">{list.name}</span>
+						{#if list.itemCount > 0}
+							<span class="shrink-0 text-xs text-ink-subtle tabular-nums"
+								>{list.checkedCount}/{list.itemCount}</span
+							>
+						{/if}
+					</a>
+				{/each}
+			</nav>
+		{/if}
 	</aside>
 
 	<main class="mx-auto w-full max-w-2xl px-4 pt-6 pb-28 md:px-8 md:pt-10 md:pb-12">
 		{@render children()}
 	</main>
+
+	<Toasts />
 
 	<nav
 		aria-label="Main"
