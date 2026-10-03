@@ -1,54 +1,36 @@
-# sv
+# Grabit
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Checklists you can reuse: lists, templates, and items you check off. Built with
+SvelteKit 3 (server-rendered) and Postgres, with a REST API and an MCP server for
+AI agents.
 
-## Creating a project
+## Requirements
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Node LTS (see `mise.toml`; `mise install` sets it up)
+- A Postgres database
+- Docker, for the end-to-end test database
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@1.0.1 create --template minimal --types ts --add prettier eslint playwright tailwindcss="plugins:none" sveltekit-adapter="adapter:node" drizzle="database:postgresql+postgresql:postgres.js+docker:no" better-auth="demo:password" --install npm .
-```
-
-## Adding features
-
-Add features to your project with `sv add`:
+## Setup
 
 ```sh
-npx sv add
-```
-
-For example, to add Tailwind CSS:
-
-```sh
-npx sv add tailwindcss
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install
+cp .env.example .env   # then fill in the values
+npm run db:migrate
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Tests
 
-To create a production version of your app:
+End-to-end only. Every test is listed in [E2E.md](E2E.md).
 
 ```sh
-npm run build
+npm run test:db    # start the throwaway test Postgres (port 5433)
+npm run test:e2e
 ```
 
-You can preview the production build with `npm run preview`.
+## Checks
+
+```sh
+npm run check
+npm run lint
+```
