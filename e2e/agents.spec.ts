@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test';
-import { addItem, createList, expect, signUp, test } from './fixtures.ts';
+import { addItem, createList, expect, saved, signUp, test } from './fixtures.ts';
 
 const api = '/api/v1';
 
@@ -211,7 +211,7 @@ test('E2E-052 an agent builds and checks off a list over MCP and the UI shows it
 
 	// And the other way round: the agent sees what the person does.
 	await addItem(page, 'Coffee');
-	await page.waitForLoadState('networkidle');
+	await saved(page);
 	const seen = JSON.parse((await callTool(request, token, 'get_list', { listId: list.id })).text);
 	expect(seen.items.map((item: { name: string }) => item.name)).toContain('Coffee');
 });

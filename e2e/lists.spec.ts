@@ -39,8 +39,11 @@ test('E2E-025 checking an item moves it to Done, updates progress and persists',
 	await addItem(page, 'Eggs');
 
 	await page.getByRole('checkbox', { name: 'Milk' }).click();
-	await expect(page.getByRole('list', { name: 'Done' }).getByRole('checkbox')).toHaveText(['Milk']);
-	await expect(page.getByRole('checkbox', { name: 'Milk' })).toBeChecked();
+	const doneList = page.getByRole('list', { name: 'Done' });
+	await expect(doneList.getByRole('checkbox')).toHaveText(['Milk']);
+	await expect(doneList.getByRole('checkbox', { name: 'Milk' })).toBeChecked();
+	// The item glides across; once it has landed there is only one of it.
+	await expect(page.getByRole('checkbox', { name: 'Milk' })).toHaveCount(1);
 	await expect(page.getByTestId('progress-text')).toHaveText('1 of 2');
 
 	await saved(page);

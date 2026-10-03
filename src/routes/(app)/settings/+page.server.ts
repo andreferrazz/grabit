@@ -61,6 +61,21 @@ export const actions: Actions = {
 		}
 	},
 
+	// The choice lives in a cookie so the server can apply it before the page paints.
+	theme: async (event) => {
+		const theme = text(await event.request.formData(), 'theme');
+		if (theme === 'light' || theme === 'dark') {
+			event.cookies.set('theme', theme, {
+				path: '/',
+				maxAge: 60 * 60 * 24 * 365,
+				httpOnly: false,
+				sameSite: 'lax'
+			});
+		} else {
+			event.cookies.delete('theme', { path: '/' });
+		}
+	},
+
 	signOut: async (event) => {
 		await auth.api.signOut({ headers: event.request.headers });
 		redirect(303, '/sign-in');

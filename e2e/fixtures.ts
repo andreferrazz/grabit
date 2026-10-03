@@ -71,9 +71,9 @@ export async function addItem(page: Page, name: string): Promise<void> {
 	await expect(page.getByRole('checkbox', { name, exact: true })).toBeVisible();
 }
 
-/** Waits until the app has no change still being saved. */
+/** Waits until every change made so far has been answered by the server. */
 export async function saved(page: Page): Promise<void> {
-	await page.waitForLoadState('networkidle');
+	await expect(page.locator('[data-pending]')).toHaveAttribute('data-pending', '0');
 }
 
 export async function createTemplate(

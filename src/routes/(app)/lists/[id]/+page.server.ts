@@ -97,6 +97,18 @@ export const actions: Actions = {
 		);
 	},
 
+	reorder: async (event) => {
+		const userId = requireUserId(event);
+		const data = await event.request.formData();
+		let itemIds: unknown = [];
+		try {
+			itemIds = JSON.parse(text(data, 'order'));
+		} catch {
+			// Left empty: the operation rejects it as invalid input.
+		}
+		return attempt(() => run(ops.reorderItems, userId, { listId: event.params.id, itemIds }));
+	},
+
 	rename: async (event) => {
 		const userId = requireUserId(event);
 		const data = await event.request.formData();

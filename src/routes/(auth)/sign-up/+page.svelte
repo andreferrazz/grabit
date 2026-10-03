@@ -19,7 +19,7 @@
 			autocomplete="name"
 			required
 			maxlength="100"
-			value={form?.name ?? ''}
+			defaultValue={form?.name ?? ''}
 		/>
 	</label>
 	<label class="block text-sm font-medium text-ink">
@@ -30,7 +30,7 @@
 			name="email"
 			autocomplete="email"
 			required
-			value={form?.email ?? ''}
+			defaultValue={form?.email ?? ''}
 		/>
 	</label>
 	<label class="block text-sm font-medium text-ink">

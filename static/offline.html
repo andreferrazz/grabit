@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Offline · Grabit</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+			}
+			body {
+				margin: 0;
+				min-height: 100dvh;
+				display: grid;
+				place-items: center;
+				font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+				background: light-dark(#f6f7f8, #0f1317);
+				color: light-dark(#17202b, #eef1f4);
+			}
+			main {
+				max-width: 22rem;
+				padding: 2rem;
+				text-align: center;
+			}
+			img {
+				width: 3.5rem;
+				height: 3.5rem;
+			}
+			h1 {
+				font-size: 1.25rem;
+				margin: 1rem 0 0.5rem;
+			}
+			p {
+				margin: 0 0 1.5rem;
+				color: light-dark(#5b6673, #a3adb8);
+			}
+			a {
+				display: inline-block;
+				padding: 0.75rem 1.25rem;
+				border-radius: 0.75rem;
+				background: #059669;
+				color: #fff;
+				font-weight: 600;
+				text-decoration: none;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<img src="/favicon.svg" alt="" />
+			<h1>You're offline</h1>
+			<p>Grabit needs a connection to load your lists. Check it and try again.</p>
+			<a href="">Try again</a>
+		</main>
+	</body>
+</html>

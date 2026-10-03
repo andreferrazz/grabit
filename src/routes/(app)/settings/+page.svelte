@@ -11,6 +11,12 @@
 	const tokenForExamples = $derived(created?.key ?? '<your token>');
 
 	const date = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
+
+	const themes = [
+		{ value: 'system', label: 'System' },
+		{ value: 'light', label: 'Light' },
+		{ value: 'dark', label: 'Dark' }
+	] as const;
 </script>
 
 <svelte:head><title>Settings · Grabit</title></svelte:head>
@@ -31,6 +37,43 @@
 	</dl>
 	<form method="post" action="?/signOut" use:enhance class="mt-5">
 		<button class="btn btn-quiet">Sign out</button>
+	</form>
+</section>
+
+<section class="card mt-4 p-5" aria-labelledby="appearance-heading">
+	<h2 id="appearance-heading" class="text-sm font-semibold text-ink">Appearance</h2>
+	<form
+		method="post"
+		action="?/theme"
+		class="mt-3"
+		use:enhance={({ formData }) => {
+			// Applied at once; the cookie makes the server render it this way from now on.
+			const theme = String(formData.get('theme'));
+			if (theme === 'system') delete document.documentElement.dataset.theme;
+			else document.documentElement.dataset.theme = theme;
+			return ({ update }) => update({ reset: false });
+		}}
+	>
+		<fieldset>
+			<legend class="sr-only">Theme</legend>
+			<div class="inline-flex rounded-xl border border-border bg-surface-2 p-1">
+				{#each themes as theme (theme.value)}
+					<button
+						name="theme"
+						value={theme.value}
+						aria-pressed={data.theme === theme.value}
+						class={[
+							'min-h-9 cursor-pointer rounded-lg px-4 text-sm font-medium transition',
+							data.theme === theme.value
+								? 'bg-surface text-ink shadow-card'
+								: 'text-ink-muted hover:text-ink'
+						]}
+					>
+						{theme.label}
+					</button>
+				{/each}
+			</div>
+		</fieldset>
 	</form>
 </section>
 

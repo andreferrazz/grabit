@@ -1,10 +1,19 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { tick } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { tick, untrack } from 'svelte';
+	import { flip } from 'svelte/animate';
+	import { crossfade, fade } from 'svelte/transition';
+	import { dragHandleZone } from 'svelte-dnd-action';
 	import EmptyState from '#lib/components/EmptyState.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import ItemRow from '#lib/components/ItemRow.svelte';
 	import Progress from '#lib/components/Progress.svelte';
+	import ShortcutsHelp from '#lib/components/ShortcutsHelp.svelte';
+	import { duration } from '#lib/motion.ts';
+	import { focusItem, handleShortcut } from '#lib/shortcuts.ts';
+	import { useSync } from '#lib/state/sync.svelte.ts';
 	import { OptimisticForms } from '#lib/state/optimistic.svelte.ts';
 	import { useToasts } from '#lib/state/toasts.svelte.ts';
 	import type { PageData } from './$types';
@@ -15,17 +24,43 @@
 
 	const toasts = useToasts();
 
-	// Local copies that the forms change at once; new server data replaces them.
-	let items = $derived(data.list.items);
-	let listName = $derived(data.list.name);
-	let editingId = $derived(data.editingId);
+	// Local copies that the forms change at once.
+	let items = $state.raw(untrack(() => data.list.items));
+	let listName = $state(untrack(() => data.list.name));
+	let shownId = untrack(() => data.list.id);
 
 	const forms = new OptimisticForms({
 		revert: () => {
 			items = data.list.items;
 			listName = data.list.name;
 		},
-		onError: (message) => toasts.error(message)
+		onError: (message) => toasts.error(message),
+		sync: useSync()
+	});
+
+	// Fresh server data replaces the local copies, except while a change is still on
+	// its way: that data was read before the change and would undo it on screen (and
+	// move the item under the user's cursor). The answer to the change reloads again.
+	$effect.pre(() => {
+		const fresh = data.list;
+		if (forms.pending === 0 || fresh.id !== shownId) {
+			items = fresh.items;
+			listName = fresh.name;
+			shownId = fresh.id;
+		}
+	});
+
+	// Which item is being edited. Plain state, not derived from the data: a background
+	// refresh must not close an edit in progress. Navigation (?edit=...) still sets it.
+	let editingId = $state(untrack(() => data.editingId));
+	afterNavigate(() => {
+		editingId = page.url.searchParams.get('edit');
+	});
+
+	// A checked item glides from "To do" to "Done" (and back) instead of jumping.
+	const [send, receive] = crossfade({
+		duration: () => duration(220),
+		fallback: (node) => fade(node, { duration: duration(150) })
 	});
 
 	const todo = $derived(items.filter((item) => !item.checked));
@@ -103,25 +138,34 @@
 		const name = String(formData.get('name') ?? '').trim();
 		if (!name) return false;
 		items = items.map((item) => (item.id === id ? { ...item, name } : item));
-		editingId = null;
+		stopEditing(String(id));
 	});
+
+	/** Leaves edit mode and puts keyboard focus back on the row, where it was before. */
+	async function stopEditing(itemId: string) {
+		editingId = null;
+		await tick();
+		focusItem(itemId);
+	}
 
 	let restoring = $state<Item>();
 	let restoreForm = $state<HTMLFormElement>();
+	let lastRemoved: Item | undefined;
+
+	async function undoRemove(removed: Item) {
+		if (lastRemoved === removed) lastRemoved = undefined;
+		restoring = removed;
+		await tick();
+		restoreForm?.requestSubmit();
+	}
 
 	const remove = forms.submit(({ formData }) => {
 		const removed = items.find((item) => item.id === formData.get('id'));
 		if (!removed) return false;
 		items = items.filter((item) => item.id !== removed.id);
+		lastRemoved = removed;
 		toasts.show(`Deleted “${removed.name}”`, {
-			action: {
-				label: 'Undo',
-				run: async () => {
-					restoring = removed;
-					await tick();
-					restoreForm?.requestSubmit();
-				}
-			}
+			action: { label: 'Undo', run: () => undoRemove(removed) }
 		});
 	});
 
@@ -146,7 +190,54 @@
 		items = items.filter((item) => !item.checked);
 		if (menu) menu.open = false;
 	});
+
+	// Reordering. Only the "To do" items can be dragged; "Done" keeps its order after them.
+	let order = $state('');
+	let reorderForm = $state<HTMLFormElement>();
+	const reorder = forms.submit();
+
+	function setTodoOrder(next: Item[]) {
+		items = [...next, ...done];
+	}
+
+	async function commitOrder() {
+		items = items.map((item, position) => ({ ...item, position }));
+		order = JSON.stringify(items.map((item) => item.id));
+		await tick();
+		reorderForm?.requestSubmit();
+	}
+
+	async function move(itemId: string, direction: -1 | 1) {
+		const index = todo.findIndex((item) => item.id === itemId);
+		const target = index + direction;
+		if (index === -1 || target < 0 || target >= todo.length) return;
+		const next = [...todo];
+		[next[index], next[target]] = [next[target], next[index]];
+		setTodoOrder(next);
+		await commitOrder();
+		focusItem(itemId);
+	}
+
+	let help = $state<ShortcutsHelp>();
+
+	function onkeydown(event: KeyboardEvent) {
+		handleShortcut(event, {
+			focusComposer: () => composer?.querySelector<HTMLInputElement>('[data-composer]')?.focus(),
+			edit: (itemId) => (editingId = itemId),
+			remove: (itemId) =>
+				document
+					.querySelector<HTMLFormElement>(`[data-item-id="${itemId}"] form[action$="deleteItem"]`)
+					?.requestSubmit(),
+			move,
+			undo: () => {
+				if (lastRemoved) void undoRemove(lastRemoved);
+			},
+			help: () => help?.open()
+		});
+	}
 </script>
+
+<svelte:window {onkeydown} />
 
 <svelte:head><title>{listName} · Grabit</title></svelte:head>
 
@@ -255,6 +346,17 @@
 </div>
 
 <form
+	bind:this={reorderForm}
+	method="post"
+	action="?/reorder"
+	use:enhance={reorder}
+	hidden
+	aria-hidden="true"
+>
+	<input type="hidden" name="order" value={order} />
+</form>
+
+<form
 	bind:this={restoreForm}
 	method="post"
 	action="?/restoreItem"
@@ -268,20 +370,19 @@
 	<input type="hidden" name="position" value={restoring?.position ?? 0} />
 </form>
 
-{#snippet rows(list: Item[])}
-	{#each list as item (item.id)}
-		<ItemRow
-			{item}
-			editing={editingId === item.id}
-			editHref="{base}?edit={item.id}"
-			cancelHref={base}
-			onedit={() => (editingId = item.id)}
-			oncancel={() => (editingId = null)}
-			{toggle}
-			rename={renameItem}
-			{remove}
-		/>
-	{/each}
+{#snippet row(item: Item, draggable: boolean)}
+	<ItemRow
+		{item}
+		{draggable}
+		editing={editingId === item.id}
+		editHref="{base}?edit={item.id}"
+		cancelHref={base}
+		onedit={() => (editingId = item.id)}
+		oncancel={() => stopEditing(item.id)}
+		{toggle}
+		rename={renameItem}
+		{remove}
+	/>
 {/snippet}
 
 <div class="mt-5 pb-16 md:pb-0">
@@ -290,17 +391,58 @@
 			Add the first item below. Paste several lines to add them all at once.
 		</EmptyState>
 	{:else}
-		{#if todo.length > 0}
-			<ul class="space-y-2" aria-label="To do">
-				{@render rows(todo)}
-			</ul>
-		{/if}
+		<ul
+			class="flex flex-col gap-2"
+			aria-label="To do"
+			use:dragHandleZone={{
+				items: todo,
+				flipDurationMs: duration(150),
+				dropTargetStyle: {},
+				dragDisabled: editingId !== null
+			}}
+			onconsider={(event) => setTodoOrder(event.detail.items)}
+			onfinalize={(event) => {
+				setTodoOrder(event.detail.items);
+				void commitOrder();
+			}}
+		>
+			{#each todo as item (item.id)}
+				<li
+					class="flex items-center gap-0.5 rounded-xl border border-border bg-surface pr-1 shadow-card"
+					data-item-id={item.id}
+					animate:flip={{ duration: duration(150) }}
+					in:receive={{ key: item.id }}
+					out:send={{ key: item.id }}
+				>
+					{@render row(item, true)}
+				</li>
+			{/each}
+		</ul>
 
 		{#if done.length > 0}
 			<h2 class="mt-6 mb-2 text-sm font-semibold text-ink-muted">Done ({done.length})</h2>
-			<ul class="space-y-2" aria-label="Done">
-				{@render rows(done)}
+			<ul class="flex flex-col gap-2" aria-label="Done">
+				{#each done as item (item.id)}
+					<li
+						class="flex items-center gap-0.5 rounded-xl border border-border bg-surface pr-1 shadow-card"
+						data-item-id={item.id}
+						animate:flip={{ duration: duration(150) }}
+						in:receive={{ key: item.id }}
+						out:send={{ key: item.id }}
+					>
+						{@render row(item, false)}
+					</li>
+				{/each}
 			</ul>
 		{/if}
 	{/if}
 </div>
+
+<p class="mt-8 hidden text-center text-xs text-ink-subtle md:block">
+	<button type="button" class="cursor-pointer hover:underline" onclick={() => help?.open()}>
+		Keyboard shortcuts
+	</button>
+	— press <kbd class="font-sans font-medium">?</kbd>
+</p>
+
+<ShortcutsHelp bind:this={help} />

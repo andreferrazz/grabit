@@ -3,13 +3,26 @@
 	import Icon, { type IconName } from '#lib/components/Icon.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import Toasts from '#lib/components/Toasts.svelte';
+	import { provideSync } from '#lib/state/sync.svelte.ts';
 	import { provideToasts } from '#lib/state/toasts.svelte.ts';
+	import { invalidateAll } from '$app/navigation';
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	provideToasts();
+	const sync = provideSync();
+
+	// Coming back to the tab or the app reloads the data, so changes made elsewhere
+	// (another device, an AI agent) show up without a manual refresh.
+	let lastRefresh = Date.now();
+	function refresh() {
+		if (document.visibilityState !== 'visible' || sync.pending > 0) return;
+		if (Date.now() - lastRefresh < 2000) return;
+		lastRefresh = Date.now();
+		void invalidateAll();
+	}
 
 	const tabs: { href: string; label: string; icon: IconName; match: (path: string) => boolean }[] =
 		[
@@ -34,7 +47,16 @@
 		];
 </script>
 
-<div class="min-h-dvh md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+<svelte:window
+	onfocus={refresh}
+	onbeforeunload={(event) => {
+		// Leaving while a change is still on its way would lose it; the browser asks first.
+		if (sync.pending > 0) event.preventDefault();
+	}}
+/>
+<svelte:document onvisibilitychange={refresh} />
+
+<div data-pending={sync.pending} class="min-h-dvh md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
 	<aside
 		class="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-border bg-surface p-4 md:flex"
 	>
@@ -89,6 +111,16 @@
 		{@render children()}
 	</main>
 
+	{#if sync.pending > 0}
+		<div
+			class="saving pointer-events-none fixed top-3 right-3 z-40 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink-muted shadow-card"
+			role="status"
+			aria-label="Saving"
+		>
+			Saving…
+		</div>
+	{/if}
+
 	<Toasts />
 
 	<nav
@@ -113,3 +145,17 @@
 		</div>
 	</nav>
 </div>
+
+<style>
+	/* Appears only when a save takes long enough to notice. */
+	.saving {
+		opacity: 0;
+		animation: appear 150ms ease-out 400ms forwards;
+	}
+
+	@keyframes appear {
+		to {
+			opacity: 1;
+		}
+	}
+</style>
