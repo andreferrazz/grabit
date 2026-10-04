@@ -209,7 +209,10 @@ test('E2E-033 a list that does not exist shows a not-found page', async ({ page 
 
 	const response = await page.goto('/lists/00000000-0000-4000-8000-000000000000');
 	expect(response?.status()).toBe(404);
-	await expect(page.getByText('List not found')).toBeVisible();
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('List not found');
+	await expect(page.getByTestId('error-id')).toHaveCount(0);
+	await page.getByRole('link', { name: 'Back to your lists' }).click();
+	await expect(page).toHaveURL('/');
 });
 
 test('E2E-034 list pages are rendered on the server with their items', async ({ page }) => {
