@@ -26,8 +26,9 @@ export default defineConfig({
 		{ name: 'phone', use: { ...devices['Pixel 7'] } }
 	],
 	webServer: {
-		// The production build, started with the test environment only.
-		command: 'npm run build && exec node build',
+		// The production build, started with the test environment only. Migrations run
+		// first, as they do when the container starts: the server expects its tables.
+		command: 'node scripts/migrate.mjs && npm run build && exec node build',
 		port,
 		reuseExistingServer: false,
 		env: {

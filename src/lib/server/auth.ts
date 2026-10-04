@@ -18,6 +18,17 @@ export const auth = betterAuth({
 	baseURL: ORIGIN,
 	secret: BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
+	// Limits on Better Auth's own HTTP endpoints, per client address. Anyone may
+	// register an OAuth client, so that endpoint gets a much tighter limit.
+	rateLimit: {
+		enabled: true,
+		window: 60,
+		max: 120,
+		customRules: {
+			'/oauth2/register': { window: 60, max: 10 },
+			'/oauth2/token': { window: 60, max: 60 }
+		}
+	},
 	emailAndPassword: {
 		enabled: true,
 		minPasswordLength: 8,

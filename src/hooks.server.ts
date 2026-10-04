@@ -65,4 +65,24 @@ const handleTheme: Handle = ({ event, resolve }) => {
 	});
 };
 
-export const handle: Handle = sequence(handleCsrf, handleTheme, handleBetterAuth);
+/** Headers that tell browsers to be strict with this site's responses. */
+const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	response.headers.set('x-content-type-options', 'nosniff');
+	response.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+	response.headers.set('x-frame-options', 'DENY');
+	response.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+	if (event.url.protocol === 'https:') {
+		response.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+	}
+
+	return response;
+};
+
+export const handle: Handle = sequence(
+	handleSecurityHeaders,
+	handleCsrf,
+	handleTheme,
+	handleBetterAuth
+);
