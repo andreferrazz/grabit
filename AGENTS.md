@@ -64,3 +64,52 @@ npm run format && npm run db:generate -- --name <what-changed>
 
 `.env` is untracked and holds real credentials. Never print it, commit it, or copy
 values out of it. `.env.example` lists the variable names only.
+
+## Cloud sessions
+
+Sessions started from claude.ai/code or the mobile app run on a fresh VM cloned from
+GitHub. The `SessionStart` hook in `.claude/settings.json` runs `scripts/cloud-session.sh`
+there, which installs the pinned Node, the npm dependencies and the test browser, and
+starts the test services, so `npm run check`, `npm run lint` and `npm run test:e2e` work
+as they do locally. The script does nothing outside a cloud session.
+
+The cloud environment needs one setting the repository cannot carry: network access
+**Custom**, with the default domains included, plus `cdn.playwright.dev` and
+`playwright.download.prss.microsoft.com` (the test browser download).
+
+There is no `.env` in a cloud session and none is needed: use the placeholder values
+from `.github/workflows/ci.yml` for `npm run check`; the tests read `.env.test`.
+
+## Working agreement
+
+- Never leave work only on the machine it was written on. Push the branch and open a
+  pull request, or a draft if it is unfinished, before the session ends.
+
+## Pull requests
+
+Every pull request body uses these five headings, in this order, at the top level, and
+no others. Never drop one: if a section has nothing in it, say so in a line.
+
+```
+## Why
+## What
+## How to test
+## Risk / rollout
+## Follow-ups
+```
+
+- **Why**: the reason the change exists (task or ticket id when there is one, and what
+  was wrong or missing). Not a restatement of the diff.
+- **What**: what changed, and the decisions a reviewer would otherwise have to
+  reverse-engineer: trade-offs made, options rejected.
+- **How to test**: the exact commands in a code block, then one line per result with
+  the numbers from the run (counts, timings), not "tests pass". Say plainly what could
+  not be tested and why.
+- **Risk / rollout**: what could break, how the change reaches an environment, how it
+  is undone. "None." is a complete answer.
+- **Follow-ups**: what is deliberately left out, and what this makes newly worth doing.
+  "None." is a complete answer.
+
+Keep it short: aim for 150 words, never past 250; three or four lines per section; no
+tables unless the data is tabular. Detail that does not fit belongs in code comments or
+the commit message.
