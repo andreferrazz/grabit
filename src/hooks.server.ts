@@ -1,8 +1,37 @@
-import type { Handle } from '@sveltejs/kit/hooks';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 import { sequence } from '@sveltejs/kit/hooks';
 import { building } from '$app/env';
 import { auth } from '#lib/server/auth.ts';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+
+/** Requests slower than this are logged, so a "it hung, then worked" report leaves a trace. */
+const SLOW_MS = 3000;
+
+/**
+ * Logs every failure of our own code with a short id. The id is also shown on the
+ * error page, so a report from a user can be matched to its log line.
+ */
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+	// Errors thrown on purpose (a 404 for a missing list) and SvelteKit's own
+	// (unknown routes) are normal traffic: no id, no stack trace.
+	if (kind !== 'unknown') return;
+	const errorId = crypto.randomUUID().slice(0, 8);
+	console.error(`[error ${errorId}] ${event.request.method} ${event.url.pathname}`, error);
+	return { message: 'Internal Error', errorId };
+};
+
+/** Logs every request that is slow or answered with a server error. */
+const handleRequestLog: Handle = async ({ event, resolve }) => {
+	const started = performance.now();
+	const response = await resolve(event);
+	const ms = Math.round(performance.now() - started);
+	if (response.status >= 500 || ms > SLOW_MS) {
+		console.warn(
+			`[request] ${response.status} ${event.request.method} ${event.url.pathname} ${ms}ms`
+		);
+	}
+	return response;
+};
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
@@ -81,6 +110,7 @@ const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
 };
 
 export const handle: Handle = sequence(
+	handleRequestLog,
 	handleSecurityHeaders,
 	handleCsrf,
 	handleTheme,
