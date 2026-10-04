@@ -18,9 +18,17 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 const formContentTypes = ['application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain'];
 const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-/** Routes for agents and scripts: no ambient cookie is trusted there without a JSON body. */
+// OAuth endpoints that other servers call directly, with a form-encoded body and no
+// Origin header. They authenticate the caller themselves and use no cookie.
+const oauthBackchannel = ['token', 'register', 'revoke', 'introspect'].map(
+	(name) => `/api/auth/oauth2/${name}`
+);
+
+/** Routes for agents, scripts and OAuth clients: no ambient cookie is trusted there. */
 function isApiRoute(pathname: string): boolean {
-	return pathname.startsWith('/api/v1/') || pathname === '/mcp';
+	return (
+		pathname.startsWith('/api/v1/') || pathname === '/mcp' || oauthBackchannel.includes(pathname)
+	);
 }
 
 /**

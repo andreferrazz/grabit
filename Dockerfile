@@ -11,7 +11,7 @@ COPY . .
 # the real values when the server starts. These placeholders satisfy the check and
 # are not written into the build.
 RUN DATABASE_URL=postgres://build-placeholder/db \
-	ORIGIN=http://build-placeholder \
+	ORIGIN=https://build-placeholder.invalid \
 	BETTER_AUTH_SECRET=build-placeholder-build-placeholder \
 	SMTP_HOST=build-placeholder SMTP_PORT=587 SMTP_USER=build-placeholder \
 	SMTP_PASS=build-placeholder SMTP_FROM=build-placeholder \

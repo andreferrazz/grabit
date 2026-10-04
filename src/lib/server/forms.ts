@@ -8,3 +8,13 @@ export function text(data: FormData, name: string): string {
 export function safeNext(next: string | null): string {
 	return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
 }
+
+/**
+ * When sign-in was requested by an OAuth client (an MCP client connecting), the
+ * authorization server sends the visitor to the sign-in page with its signed
+ * request in the query string. After sign-in they go back to it to continue.
+ */
+export function oauthContinuation(url: URL): string | null {
+	const isOAuthRequest = url.searchParams.has('client_id') && url.searchParams.has('sig');
+	return isOAuthRequest ? `/api/auth/oauth2/authorize${url.search}` : null;
+}

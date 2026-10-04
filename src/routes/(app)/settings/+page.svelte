@@ -140,7 +140,16 @@
 <section class="card mt-4 p-5" aria-labelledby="connect-heading">
 	<h2 id="connect-heading" class="text-sm font-semibold text-ink">Connect an AI agent</h2>
 
-	<h3 class="mt-4 text-sm font-medium text-ink">Claude Code and other MCP clients</h3>
+	<h3 class="mt-4 text-sm font-medium text-ink">Claude (web, desktop and mobile)</h3>
+	<p class="mt-1 text-sm text-ink-muted">
+		In Claude, open Settings, then Connectors, choose “Add custom connector” and paste this address.
+		Claude sends you here to sign in and approve; no token is needed.
+	</p>
+	<div class="mt-2">
+		<CodeBlock label="connector address" code={`${data.origin}/mcp`} />
+	</div>
+
+	<h3 class="mt-5 text-sm font-medium text-ink">Claude Code and other MCP clients</h3>
 	<p class="mt-1 text-sm text-ink-muted">
 		Grabit is an MCP server at <code>{data.origin}/mcp</code>. Create a token above, then run:
 	</p>
