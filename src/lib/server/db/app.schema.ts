@@ -7,6 +7,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	uuid
 } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema.ts';
@@ -59,10 +60,15 @@ export const lists = pgTable(
 		name: text('name').notNull(),
 		// Where the list came from. Items are copied at creation, so this is provenance only.
 		templateId: uuid('template_id').references(() => templates.id, { onDelete: 'set null' }),
+		// The list the app opens on. At most one per user.
+		isDefault: boolean('is_default').notNull().default(false),
 		...timestamps
 	},
 	(table) => [
 		index('lists_user_created_idx').on(table.userId, table.createdAt.desc()),
+		uniqueIndex('lists_user_default_idx')
+			.on(table.userId)
+			.where(sql`${table.isDefault}`),
 		check('lists_name_length', sql`char_length(${table.name}) between 1 and 200`)
 	]
 );

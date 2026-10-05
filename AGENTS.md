@@ -84,6 +84,9 @@ from `.github/workflows/ci.yml` for `npm run check`; the tests read `.env.test`.
 
 - Never leave work only on the machine it was written on. Push the branch and open a
   pull request, or a draft if it is unfinished, before the session ends.
+- No AI attribution anywhere: no "Generated with Claude Code" notes, no
+  `Co-Authored-By: Claude` trailers, and no Claude session links in commits, pull
+  requests, comments or code. `.claude/settings.json` turns the built-in ones off.
 
 ## Pull requests
 

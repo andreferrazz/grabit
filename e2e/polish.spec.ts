@@ -15,7 +15,7 @@ test('E2E-056 the app is installable: manifest, icons and theme colour are in pl
 	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#059669');
 
 	const manifest = await (await request.get('/manifest.webmanifest')).json();
-	expect(manifest).toMatchObject({ name: 'Grabit', display: 'standalone', start_url: '/' });
+	expect(manifest).toMatchObject({ name: 'Grabit', display: 'standalone', start_url: '/open' });
 	expect(manifest.icons.some((icon: { purpose?: string }) => icon.purpose === 'maskable')).toBe(
 		true
 	);

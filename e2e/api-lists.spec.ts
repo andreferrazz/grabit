@@ -47,6 +47,27 @@ test('E2E-016 the API renames and deletes a list', async ({ page }) => {
 	expect((await request.get(`${api}/lists/${list.id}`)).status()).toBe(404);
 });
 
+test('E2E-078 the API sets and clears the default list', async ({ page }) => {
+	await signUp(page);
+	const request = page.request;
+	const first = await (await request.post(`${api}/lists`, { data: { name: 'First' } })).json();
+	const second = await (await request.post(`${api}/lists`, { data: { name: 'Second' } })).json();
+	expect(first.isDefault).toBe(false);
+
+	const set = await request.put(`${api}/lists/${first.id}/default`, { data: { isDefault: true } });
+	expect((await set.json()).isDefault).toBe(true);
+	await request.put(`${api}/lists/${second.id}/default`, { data: { isDefault: true } });
+
+	const defaults = async () =>
+		((await (await request.get(`${api}/lists`)).json()) as { id: string; isDefault: boolean }[])
+			.filter((list) => list.isDefault)
+			.map((list) => list.id);
+	expect(await defaults()).toEqual([second.id]);
+
+	await request.put(`${api}/lists/${second.id}/default`, { data: { isDefault: false } });
+	expect(await defaults()).toEqual([]);
+});
+
 test('E2E-017 the API adds, renames, checks and removes items', async ({ page }) => {
 	await signUp(page);
 	const request = page.request;

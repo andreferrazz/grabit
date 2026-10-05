@@ -6,7 +6,9 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 	if (!locals.user) {
 		const next = url.pathname + url.search;
-		redirect(303, next === '/' ? '/sign-in' : `/sign-in?next=${encodeURIComponent(next)}`);
+		// Signing in lands on /open anyway, so the start pages need no ?next.
+		const start = next === '/' || next === '/open';
+		redirect(303, start ? '/sign-in' : `/sign-in?next=${encodeURIComponent(next)}`);
 	}
 
 	return {

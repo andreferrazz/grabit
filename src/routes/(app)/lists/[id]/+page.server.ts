@@ -117,6 +117,17 @@ export const actions: Actions = {
 		);
 	},
 
+	setDefault: async (event) => {
+		const userId = requireUserId(event);
+		const data = await event.request.formData();
+		return attempt(() =>
+			run(ops.setDefaultList, userId, {
+				listId: event.params.id,
+				isDefault: text(data, 'isDefault') === 'true'
+			})
+		);
+	},
+
 	uncheckAll: async (event) => {
 		const userId = requireUserId(event);
 		return attempt(() => run(ops.uncheckAll, userId, { listId: event.params.id }));

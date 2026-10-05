@@ -17,6 +17,7 @@ export type ListSummary = {
 	id: string;
 	name: string;
 	templateId: string | null;
+	isDefault: boolean;
 	itemCount: number;
 	checkedCount: number;
 	createdAt: Date;
@@ -56,6 +57,7 @@ async function readList(tx: Tx, userId: string, listId: string): Promise<ListDet
 		id: list.id,
 		name: list.name,
 		templateId: list.templateId,
+		isDefault: list.isDefault,
 		itemCount: items.length,
 		checkedCount: items.filter((item) => item.checked).length,
 		createdAt: list.createdAt,
@@ -105,6 +107,7 @@ export async function listLists(userId: string): Promise<ListSummary[]> {
 			id: lists.id,
 			name: lists.name,
 			templateId: lists.templateId,
+			isDefault: lists.isDefault,
 			itemCount: sql<number>`count(${listItems.id})::int`,
 			checkedCount: sql<number>`(count(${listItems.id}) filter (where ${listItems.checked}))::int`,
 			createdAt: lists.createdAt,
@@ -190,6 +193,25 @@ export async function renameList(
 	return db.transaction(async (tx) => {
 		await requireList(tx, userId, listId, true);
 		await tx.update(lists).set({ name, updatedAt: new Date() }).where(eq(lists.id, listId));
+		return readList(tx, userId, listId);
+	});
+}
+
+/** Makes this the list the app opens on, replacing any other, or stops it being one. */
+export async function setDefaultList(
+	userId: string,
+	listId: string,
+	isDefault: boolean
+): Promise<ListDetail> {
+	return db.transaction(async (tx) => {
+		await requireList(tx, userId, listId, true);
+		if (isDefault) {
+			await tx
+				.update(lists)
+				.set({ isDefault: false })
+				.where(and(eq(lists.userId, userId), eq(lists.isDefault, true)));
+		}
+		await tx.update(lists).set({ isDefault }).where(eq(lists.id, listId));
 		return readList(tx, userId, listId);
 	});
 }

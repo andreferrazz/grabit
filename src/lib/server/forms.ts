@@ -6,7 +6,7 @@ export function text(data: FormData, name: string): string {
 
 /** Only same-site paths are accepted as a post-sign-in destination. */
 export function safeNext(next: string | null): string {
-	return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+	return next && next.startsWith('/') && !next.startsWith('//') ? next : '/open';
 }
 
 /**
