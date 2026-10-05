@@ -8,7 +8,7 @@ const openToSignedIn = ['/(auth)/reset-password', '/(auth)/oauth/consent'];
 export const load: LayoutServerLoad = ({ locals, route, url }) => {
 	if (locals.user && !openToSignedIn.includes(route.id ?? '')) {
 		// Already signed in: go straight on with the OAuth request, or to the app.
-		redirect(303, oauthContinuation(url) ?? '/');
+		redirect(303, oauthContinuation(url) ?? '/open');
 	}
 
 	// Sign-in and sign-up link to each other; an OAuth request must survive the hop.

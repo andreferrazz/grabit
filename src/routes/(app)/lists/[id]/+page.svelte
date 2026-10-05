@@ -27,12 +27,14 @@
 	// Local copies that the forms change at once.
 	let items = $state.raw(untrack(() => data.list.items));
 	let listName = $state(untrack(() => data.list.name));
+	let isDefault = $state(untrack(() => data.list.isDefault));
 	let shownId = untrack(() => data.list.id);
 
 	const forms = new OptimisticForms({
 		revert: () => {
 			items = data.list.items;
 			listName = data.list.name;
+			isDefault = data.list.isDefault;
 		},
 		onError: (message) => toasts.error(message),
 		sync: useSync()
@@ -46,6 +48,7 @@
 		if (forms.pending === 0 || fresh.id !== shownId) {
 			items = fresh.items;
 			listName = fresh.name;
+			isDefault = fresh.isDefault;
 			shownId = fresh.id;
 		}
 	});
@@ -181,6 +184,11 @@
 		if (menu) menu.open = false;
 	});
 
+	const setDefault = forms.submit(({ formData }) => {
+		isDefault = formData.get('isDefault') === 'true';
+		if (menu) menu.open = false;
+	});
+
 	const uncheckAll = forms.submit(() => {
 		items = items.map((item) => ({ ...item, checked: false, checkedAt: null }));
 		if (menu) menu.open = false;
@@ -271,6 +279,12 @@
 					autocomplete="off"
 				/>
 				<button class="btn btn-quiet shrink-0">Rename</button>
+			</form>
+			<form method="post" action="?/setDefault" use:enhance={setDefault}>
+				<input type="hidden" name="isDefault" value={String(!isDefault)} />
+				<button class="btn btn-quiet w-full">
+					{isDefault ? 'Stop opening the app here' : 'Open the app on this list'}
+				</button>
 			</form>
 			<form method="post" action="?/uncheckAll" use:enhance={uncheckAll}>
 				<button class="btn btn-quiet w-full" disabled={done.length === 0}>Uncheck all</button>

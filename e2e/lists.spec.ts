@@ -1,4 +1,14 @@
-import { addItem, createList, expect, newAccount, saved, signUp, test } from './fixtures.ts';
+import {
+	addItem,
+	createList,
+	expect,
+	newAccount,
+	saved,
+	signIn,
+	signOut,
+	signUp,
+	test
+} from './fixtures.ts';
 
 test('E2E-023 a new list opens empty and appears on the overview', async ({ page }) => {
 	await signUp(page);
@@ -275,4 +285,42 @@ test.describe('without JavaScript', () => {
 		await page.getByRole('button', { name: 'Delete Milk' }).click();
 		await expect(page.getByRole('checkbox')).toHaveText(['Free-range eggs']);
 	});
+});
+
+test('E2E-077 the app opens on the default list, and only one list is the default', async ({
+	page
+}) => {
+	const account = await signUp(page);
+
+	// Without a default, opening the app shows the overview.
+	await page.goto('/open');
+	await expect(page).toHaveURL(/\/$/);
+
+	await createList(page, 'Groceries');
+	await page.getByLabel('List options').click();
+	await page.getByRole('button', { name: 'Open the app on this list' }).click();
+	await saved(page);
+
+	await createList(page, 'Trip');
+	const trip = page.url();
+	await page.getByLabel('List options').click();
+	await page.getByRole('button', { name: 'Open the app on this list' }).click();
+	await saved(page);
+
+	await page.goto('/open');
+	await expect(page).toHaveURL(trip);
+	await page.goto('/');
+	const lists = page.getByRole('list', { name: 'Your lists' });
+	await expect(lists.getByText('Default')).toHaveCount(1);
+	await expect(lists.getByRole('link', { name: /Trip/ })).toContainText('Default');
+
+	await signOut(page);
+	await signIn(page, account.email, account.password);
+	await expect(page.getByRole('heading', { name: 'Trip', level: 1 })).toBeVisible();
+
+	await page.getByLabel('List options').click();
+	await page.getByRole('button', { name: 'Stop opening the app here' }).click();
+	await saved(page);
+	await page.goto('/open');
+	await expect(page).toHaveURL(/\/$/);
 });

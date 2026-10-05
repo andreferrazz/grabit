@@ -123,7 +123,7 @@ test('E2E-050 the OpenAPI document is public and describes every endpoint', asyn
 	const operationIds = Object.values(document.paths).flatMap((methods) =>
 		Object.values(methods as Record<string, { operationId: string }>).map((op) => op.operationId)
 	);
-	expect(operationIds).toHaveLength(24);
+	expect(operationIds).toHaveLength(25);
 });
 
 test('E2E-051 the MCP endpoint asks for a token and lists the tools', async ({ page, request }) => {
@@ -155,6 +155,7 @@ test('E2E-051 the MCP endpoint asks for a token and lists the tools', async ({ p
 			'set_items_checked',
 			'remove_items',
 			'reorder_items',
+			'set_default_list',
 			'list_templates',
 			'create_template',
 			'save_list_as_template'
@@ -162,7 +163,7 @@ test('E2E-051 the MCP endpoint asks for a token and lists the tools', async ({ p
 	);
 	// The single-item delete tools are left out: remove_items covers them.
 	expect(names).not.toContain('remove_item');
-	expect(names).toHaveLength(22);
+	expect(names).toHaveLength(23);
 
 	const createListTool = tools.find((tool: { name: string }) => tool.name === 'create_list');
 	expect(createListTool.inputSchema.properties.templateId).toBeDefined();

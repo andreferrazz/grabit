@@ -1,8 +1,11 @@
 <script lang="ts">
 	import Progress from './Progress.svelte';
 
-	let { list }: { list: { id: string; name: string; itemCount: number; checkedCount: number } } =
-		$props();
+	let {
+		list
+	}: {
+		list: { id: string; name: string; isDefault: boolean; itemCount: number; checkedCount: number };
+	} = $props();
 
 	const allDone = $derived(list.itemCount > 0 && list.checkedCount === list.itemCount);
 </script>
@@ -12,7 +15,14 @@
 	class="card block p-4 transition hover:border-brand focus-visible:border-brand active:scale-[0.99]"
 >
 	<div class="flex items-baseline justify-between gap-3">
-		<h2 class="truncate text-base font-semibold text-ink">{list.name}</h2>
+		<div class="flex min-w-0 items-baseline gap-2">
+			<h2 class="truncate text-base font-semibold text-ink">{list.name}</h2>
+			{#if list.isDefault}
+				<span class="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-ink"
+					>Default</span
+				>
+			{/if}
+		</div>
 		<span
 			class={[
 				'shrink-0 text-sm tabular-nums',

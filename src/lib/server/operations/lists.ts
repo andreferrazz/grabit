@@ -50,6 +50,20 @@ export const renameList = defineOperation({
 	rest: { method: 'PATCH', path: '/lists/:listId' }
 });
 
+export const setDefaultList = defineOperation({
+	name: 'set_default_list',
+	description:
+		'Make a checklist the one the app opens on (replacing any other), or stop it being one. Returns the updated list.',
+	input: z.object({
+		listId,
+		isDefault: z
+			.boolean()
+			.describe('true to open the app on this list, false to open it on the overview.')
+	}),
+	handler: (userId, input) => lists.setDefaultList(userId, input.listId, input.isDefault),
+	rest: { method: 'PUT', path: '/lists/:listId/default' }
+});
+
 export const deleteList = defineOperation({
 	name: 'delete_list',
 	description: 'Permanently delete a checklist and all of its items.',
@@ -154,6 +168,7 @@ export const listOperations = [
 	getList,
 	createList,
 	renameList,
+	setDefaultList,
 	deleteList,
 	addItems,
 	updateItem,
